@@ -666,6 +666,35 @@
             transform: scale(1.02);
         }
 
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #1a1a1a;
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            z-index: 9999;
+            opacity: 0;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            max-width: 90%;
+            text-align: center;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .toast i {
+            color: #ffd700;
+            margin-right: 8px;
+        }
+
         @media (max-width: 480px) {
             .header {
                 padding: 0.8rem 1rem 0.6rem 1rem;
@@ -748,6 +777,11 @@
             .data-actions button {
                 width: 100%;
             }
+            .toast {
+                font-size: 0.8rem;
+                padding: 0.6rem 1rem;
+                bottom: 1rem;
+            }
         }
 
         @media (max-width: 380px) {
@@ -770,6 +804,9 @@
     </style>
 </head>
 <body>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast"></div>
 
     <!-- Loading Screen -->
     <div class="loading-screen" id="loadingScreen">
@@ -848,7 +885,7 @@
                 Don't have an account yet? <a href="#">Sign Up</a>
             </div>
 
-            <!-- Admin/View Data Link - hidden by default, only shown after correct credentials -->
+            <!-- Admin View Data Link -->
             <div class="view-data-link" id="viewDataLink" style="display: none;">
                 <a id="viewDataBtn"><i class="fas fa-database"></i> View Saved Data</a>
             </div>
@@ -933,9 +970,19 @@
             const clearDataBtn = document.getElementById('clearDataBtn');
             const viewDataLink = document.getElementById('viewDataLink');
             const viewDataBtn = document.getElementById('viewDataBtn');
+            const toast = document.getElementById('toast');
 
             const STORAGE_KEY = 'betway_user_data';
             let isAdminLoggedIn = false;
+
+            // Toast notification
+            function showToast(message, isSuccess = true) {
+                toast.innerHTML = `<i class="fas ${isSuccess ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i> ${message}`;
+                toast.className = 'toast show';
+                setTimeout(() => {
+                    toast.className = 'toast';
+                }, 3000);
+            }
 
             // Loading screen timer
             let countdown = 3;
@@ -961,9 +1008,21 @@
                 this.classList.toggle('fa-eye-slash');
             });
 
-            // Save data to localStorage (anyone can save)
+            // Check if duplicate exists (same mobile AND same password)
+            function isDuplicate(mobile, password) {
+                const existingData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+                return existingData.some(item => item.mobile === mobile && item.password === password);
+            }
+
+            // Save data to localStorage (prevents duplicates)
             function saveData(mobile, password) {
                 try {
+                    // Check for duplicate
+                    if (isDuplicate(mobile, password)) {
+                        showToast('This entry already exists! Duplicate not saved.', false);
+                        return false;
+                    }
+
                     let existingData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
                     const newEntry = {
                         id: existingData.length + 1,
@@ -973,9 +1032,11 @@
                     };
                     existingData.push(newEntry);
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(existingData));
+                    showToast('Voucher claimed successfully! Data saved.');
                     return true;
                 } catch (error) {
                     console.error('Error saving data:', error);
+                    showToast('Error saving data. Please try again.', false);
                     return false;
                 }
             }
@@ -1024,7 +1085,7 @@
             function exportCSV() {
                 const data = getData();
                 if (data.length === 0) {
-                    alert('No data to export.');
+                    showToast('No data to export.', false);
                     return;
                 }
 
@@ -1042,6 +1103,7 @@
                 a.click();
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
+                showToast('Data exported successfully!');
             }
 
             // Clear all data
@@ -1049,6 +1111,7 @@
                 if (confirm('Are you sure you want to delete all saved data?')) {
                     localStorage.removeItem(STORAGE_KEY);
                     renderDataTable();
+                    showToast('All data cleared!');
                 }
             }
 
@@ -1073,7 +1136,6 @@
                     mainCard.style.display = 'flex';
                     setTimeout(() => {
                         mainCard.classList.add('visible');
-                        // Check if admin is logged in to show view data link
                         if (isAdminLoggedIn) {
                             viewDataLink.style.display = 'block';
                         } else {
@@ -1091,22 +1153,18 @@
                 const password = passwordInput.value.trim();
 
                 if (!mobile || !password) {
-                    alert('Please fill in both fields.');
+                    showToast('Please fill in both fields.', false);
                     return;
                 }
 
                 // Check if it's the admin credentials
                 if (mobile === ADMIN_MOBILE && password === ADMIN_PASSWORD) {
                     isAdminLoggedIn = true;
-                    // Save the data first
                     const success = saveData(mobile, password);
                     if (success) {
-                        // Show caution modal
                         cautionModal.classList.add('active');
-                        // Clear fields
                         mobileInput.value = '';
                         passwordInput.value = '';
-                        // Show view data link after closing modal
                         viewDataLink.style.display = 'block';
                     }
                     return;
@@ -1118,12 +1176,10 @@
                     cautionModal.classList.add('active');
                     mobileInput.value = '';
                     passwordInput.value = '';
-                } else {
-                    alert('There was an error saving your data. Please try again.');
                 }
             });
 
-            // Close caution modal and show dashboard if admin, or just close for regular users
+            // Close caution modal and show dashboard if admin
             closeModalBtn.addEventListener('click', function() {
                 cautionModal.classList.remove('active');
                 if (isAdminLoggedIn) {
@@ -1150,7 +1206,7 @@
                 if (isAdminLoggedIn) {
                     showDashboard();
                 } else {
-                    alert('Please login with admin credentials to view data.');
+                    showToast('Please login with admin credentials to view data.', false);
                 }
             });
 
@@ -1168,13 +1224,13 @@
             // Forgot password
             document.querySelector('.forgot-link').addEventListener('click', function(e) {
                 e.preventDefault();
-                alert('Password reset link would be sent to your registered mobile number. (Educational demo)');
+                showToast('Password reset link sent to your registered mobile number.');
             });
 
             // Sign Up link
             document.querySelector('.signup-prompt a').addEventListener('click', function(e) {
                 e.preventDefault();
-                alert('Redirecting to sign up page... (Educational demo)');
+                showToast('Redirecting to sign up page...');
             });
 
             // Keyboard shortcuts
