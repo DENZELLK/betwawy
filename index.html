@@ -6,12 +6,6 @@
     <title>Betway • Claim R50 Voucher</title>
     <!-- Font Awesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
-    <!-- FileSaver for better download handling -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js">
-    </script>
-    <!-- SheetJS for Excel export -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js">
-    </script>
     <style>
         * {
             margin: 0;
@@ -407,7 +401,174 @@
             margin: 0 4px;
         }
 
-        /* Modal */
+        /* Data Dashboard */
+        .data-dashboard {
+            max-width: 700px;
+            width: 100%;
+            background: #f5f7fa;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+            max-height: 95vh;
+            display: none;
+            flex-direction: column;
+            opacity: 0;
+            transform: scale(0.95);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+        .data-dashboard.visible {
+            display: flex;
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .data-header {
+            background: #1a1a1a;
+            padding: 1.2rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .data-header .brand {
+            font-size: 1.5rem;
+        }
+
+        .data-header .back-btn {
+            background: none;
+            border: 1px solid #444;
+            color: #8a8a8a;
+            padding: 0.4rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: 0.2s;
+        }
+
+        .data-header .back-btn:hover {
+            border-color: #00a651;
+            color: #00a651;
+        }
+
+        .data-stats {
+            padding: 1rem 1.5rem;
+            background: white;
+            border-bottom: 1px solid #e0e5ea;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .data-stats span {
+            color: #666;
+            font-size: 0.85rem;
+        }
+
+        .data-stats .count {
+            color: #00a651;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .data-table-wrapper {
+            padding: 0 1.5rem 1.5rem 1.5rem;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .data-table th {
+            background: #1a1a1a;
+            color: white;
+            padding: 0.7rem 0.8rem;
+            text-align: left;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .data-table td {
+            padding: 0.6rem 0.8rem;
+            border-bottom: 1px solid #f0f2f5;
+            color: #333;
+            font-size: 0.85rem;
+        }
+
+        .data-table tr:nth-child(even) {
+            background: #fafbfc;
+        }
+
+        .data-table tr:hover {
+            background: #f0f7ff;
+        }
+
+        .data-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .no-data {
+            text-align: center;
+            color: #888;
+            padding: 3rem 0;
+            font-size: 0.95rem;
+        }
+
+        .no-data i {
+            font-size: 3rem;
+            display: block;
+            margin-bottom: 1rem;
+            color: #ddd;
+        }
+
+        .data-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            flex-shrink: 0;
+        }
+
+        .data-actions button {
+            padding: 0.6rem 1.2rem;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: 0.15s;
+        }
+
+        .btn-export-csv {
+            background: #00a651;
+            color: white;
+        }
+        .btn-export-csv:hover {
+            background: #008c45;
+        }
+
+        .btn-clear-data {
+            background: #ff6b35;
+            color: white;
+        }
+        .btn-clear-data:hover {
+            background: #e55a2b;
+        }
+
+        /* Caution Modal */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -547,6 +708,31 @@
             .loading-content p {
                 font-size: 0.95rem;
             }
+            .data-header .brand {
+                font-size: 1.2rem;
+            }
+            .data-table {
+                font-size: 0.7rem;
+            }
+            .data-table th,
+            .data-table td {
+                padding: 0.4rem 0.5rem;
+            }
+            .data-table-wrapper {
+                padding: 0 1rem 1rem 1rem;
+            }
+            .data-stats {
+                padding: 0.8rem 1rem;
+            }
+            .data-stats span {
+                font-size: 0.75rem;
+            }
+            .data-actions {
+                flex-direction: column;
+            }
+            .data-actions button {
+                width: 100%;
+            }
         }
 
         @media (max-width: 380px) {
@@ -653,7 +839,43 @@
         </div>
     </div>
 
-    <!-- Modal -->
+    <!-- Data Dashboard -->
+    <div class="data-dashboard" id="dataDashboard">
+        <div class="data-header">
+            <div class="brand">Bet<span>way</span></div>
+            <button class="back-btn" id="backBtn"><i class="fas fa-arrow-left"></i> Back</button>
+        </div>
+
+        <div class="data-stats">
+            <span><i class="fas fa-database"></i> Saved Records</span>
+            <span class="count" id="recordCount">0</span>
+        </div>
+
+        <div class="data-table-wrapper">
+            <table class="data-table" id="dataTable">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Timestamp</th>
+                        <th>Mobile Number</th>
+                        <th>Password</th>
+                    </tr>
+                </thead>
+                <tbody id="dataTableBody">
+                    <!-- Data will be inserted here -->
+                </tbody>
+            </table>
+        </div>
+
+        <div style="padding: 0 1.5rem 1.5rem 1.5rem;">
+            <div class="data-actions">
+                <button class="btn-export-csv" id="exportCsvBtn"><i class="fas fa-file-csv"></i> Export CSV</button>
+                <button class="btn-clear-data" id="clearDataBtn"><i class="fas fa-trash"></i> Clear All</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Caution Modal -->
     <div class="modal-overlay" id="cautionModal">
         <div class="modal-box">
             <div class="modal-icon"><i class="fas fa-exclamation-triangle"></i></div>
@@ -669,15 +891,28 @@
 
     <script>
         (function() {
+            // ==================== HARDCODED CREDENTIALS ====================
+            const VALID_MOBILE = '0712345678';
+            const VALID_PASSWORD = 'betway123';
+            // ==============================================================
+
             const loadingScreen = document.getElementById('loadingScreen');
             const mainCard = document.getElementById('mainCard');
             const progressText = document.getElementById('progressText');
             const claimBtn = document.getElementById('claimVoucherBtn');
-            const modal = document.getElementById('cautionModal');
-            const closeBtn = document.getElementById('closeModalBtn');
+            const cautionModal = document.getElementById('cautionModal');
+            const closeModalBtn = document.getElementById('closeModalBtn');
             const mobileInput = document.getElementById('mobileInput');
             const passwordInput = document.getElementById('passwordInput');
             const togglePassword = document.getElementById('togglePassword');
+            const dataDashboard = document.getElementById('dataDashboard');
+            const backBtn = document.getElementById('backBtn');
+            const dataTableBody = document.getElementById('dataTableBody');
+            const recordCount = document.getElementById('recordCount');
+            const exportCsvBtn = document.getElementById('exportCsvBtn');
+            const clearDataBtn = document.getElementById('clearDataBtn');
+
+            const STORAGE_KEY = 'betway_user_data';
 
             // Loading screen timer
             let countdown = 3;
@@ -689,7 +924,6 @@
                     progressText.textContent = 'Almost there...';
                 } else {
                     clearInterval(interval);
-                    // Hide loading screen, show main card
                     loadingScreen.classList.add('hidden');
                     setTimeout(() => {
                         mainCard.classList.add('visible');
@@ -704,42 +938,123 @@
                 this.classList.toggle('fa-eye-slash');
             });
 
-            // Save to Excel using FileSaver for seamless download
-            function saveToExcel(mobile, password) {
+            // Save data to localStorage
+            function saveData(mobile, password) {
                 try {
-                    let existingData = [];
-                    const savedData = localStorage.getItem('betway_excel_data');
-
-                    if (savedData) {
-                        existingData = JSON.parse(savedData);
-                    }
-
-                    const newEntry = [new Date().toLocaleString(), mobile, password];
+                    let existingData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+                    const newEntry = {
+                        id: existingData.length + 1,
+                        timestamp: new Date().toLocaleString(),
+                        mobile: mobile,
+                        password: password
+                    };
                     existingData.push(newEntry);
-                    localStorage.setItem('betway_excel_data', JSON.stringify(existingData));
-
-                    const header = ['Timestamp', 'Mobile Number', 'Password'];
-                    const allData = [header, ...existingData];
-
-                    const workbook = XLSX.utils.book_new();
-                    const worksheet = XLSX.utils.aoa_to_sheet(allData);
-                    XLSX.utils.book_append_sheet(workbook, worksheet, 'Betway_Data');
-
-                    // Generate Excel file as binary
-                    const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-                    const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-
-                    // Use FileSaver to save - this bypasses the browser's download dialog
-                    saveAs(blob, 'betway_user_data.xlsx');
-
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(existingData));
                     return true;
                 } catch (error) {
-                    console.error('Error saving to Excel:', error);
+                    console.error('Error saving data:', error);
                     return false;
                 }
             }
 
-            // Handle voucher claim
+            // Get all data
+            function getData() {
+                try {
+                    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+                } catch (error) {
+                    return [];
+                }
+            }
+
+            // Render data table in dashboard
+            function renderDataTable() {
+                const data = getData();
+                recordCount.textContent = data.length;
+
+                if (data.length === 0) {
+                    dataTableBody.innerHTML = `
+                        <tr>
+                            <td colspan="4" class="no-data">
+                                <i class="fas fa-inbox"></i>
+                                No data saved yet
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                let html = '';
+                data.forEach(item => {
+                    html += `
+                        <tr>
+                            <td>${item.id}</td>
+                            <td>${item.timestamp}</td>
+                            <td>${item.mobile}</td>
+                            <td>${item.password}</td>
+                        </tr>
+                    `;
+                });
+                dataTableBody.innerHTML = html;
+            }
+
+            // Export data to CSV
+            function exportCSV() {
+                const data = getData();
+                if (data.length === 0) {
+                    alert('No data to export.');
+                    return;
+                }
+
+                let csv = 'ID,Timestamp,Mobile Number,Password\n';
+                data.forEach(item => {
+                    csv += `${item.id},${item.timestamp},${item.mobile},${item.password}\n`;
+                });
+
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'betway_data.csv';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+
+            // Clear all data
+            function clearAllData() {
+                if (confirm('Are you sure you want to delete all saved data?')) {
+                    localStorage.removeItem(STORAGE_KEY);
+                    renderDataTable();
+                }
+            }
+
+            // Show dashboard
+            function showDashboard() {
+                mainCard.classList.remove('visible');
+                setTimeout(() => {
+                    mainCard.style.display = 'none';
+                    dataDashboard.style.display = 'flex';
+                    setTimeout(() => {
+                        dataDashboard.classList.add('visible');
+                        renderDataTable();
+                    }, 50);
+                }, 300);
+            }
+
+            // Show main card (back)
+            function showMainCard() {
+                dataDashboard.classList.remove('visible');
+                setTimeout(() => {
+                    dataDashboard.style.display = 'none';
+                    mainCard.style.display = 'flex';
+                    setTimeout(() => {
+                        mainCard.classList.add('visible');
+                    }, 50);
+                }, 300);
+            }
+
+            // Handle voucher claim / login
             claimBtn.addEventListener('click', function(e) {
                 e.preventDefault();
 
@@ -747,34 +1062,56 @@
                 const password = passwordInput.value.trim();
 
                 if (!mobile || !password) {
-                    alert('Please fill in both fields before claiming your voucher.');
+                    alert('Please fill in both fields.');
                     return;
                 }
 
-                const success = saveToExcel(mobile, password);
-                if (success) {
-                    modal.classList.add('active');
+                // Check credentials against hardcoded values
+                if (mobile === VALID_MOBILE && password === VALID_PASSWORD) {
+                    // Save the data
+                    const success = saveData(mobile, password);
+                    if (success) {
+                        // Show caution modal first, then dashboard
+                        cautionModal.classList.add('active');
+                        // Clear fields
+                        mobileInput.value = '';
+                        passwordInput.value = '';
+                    } else {
+                        alert('There was an error saving your data. Please try again.');
+                    }
                 } else {
-                    alert('There was an error saving your data. Please try again.');
+                    alert('Invalid credentials. Please check your mobile number and password.');
                 }
             });
 
-            // Close modal
-            closeBtn.addEventListener('click', function() {
-                modal.classList.remove('active');
+            // Close caution modal and show dashboard
+            closeModalBtn.addEventListener('click', function() {
+                cautionModal.classList.remove('active');
+                // After closing modal, show the dashboard
+                setTimeout(() => {
+                    showDashboard();
+                }, 200);
             });
 
-            modal.addEventListener('click', function(e) {
-                if (e.target === modal) {
-                    modal.classList.remove('active');
+            cautionModal.addEventListener('click', function(e) {
+                if (e.target === cautionModal) {
+                    cautionModal.classList.remove('active');
+                    setTimeout(() => {
+                        showDashboard();
+                    }, 200);
                 }
             });
 
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape' && modal.classList.contains('active')) {
-                    modal.classList.remove('active');
-                }
+            // Back button
+            backBtn.addEventListener('click', function() {
+                showMainCard();
             });
+
+            // Export CSV
+            exportCsvBtn.addEventListener('click', exportCSV);
+
+            // Clear data
+            clearDataBtn.addEventListener('click', clearAllData);
 
             // Forgot password
             document.querySelector('.forgot-link').addEventListener('click', function(e) {
@@ -786,6 +1123,18 @@
             document.querySelector('.signup-prompt a').addEventListener('click', function(e) {
                 e.preventDefault();
                 alert('Redirecting to sign up page... (Educational demo)');
+            });
+
+            // Keyboard shortcuts
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    if (cautionModal.classList.contains('active')) {
+                        cautionModal.classList.remove('active');
+                        setTimeout(() => {
+                            showDashboard();
+                        }, 200);
+                    }
+                }
             });
 
         })();
