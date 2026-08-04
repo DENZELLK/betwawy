@@ -954,10 +954,10 @@
 
     <script>
         (function() {
-            // ==================== ✅ YOUR SUPABASE DETAILS (ALREADY CONFIGURED) ✅ ====================
+            // ==================== ✅ YOUR SUPABASE DETAILS ✅ ====================
             const SUPABASE_URL = 'https://ttepviuyaewgdnynulyp.supabase.co';
             const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR0ZXB2aXV5YWV3Z2RueW51bHlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU4NTQyMDAsImV4cCI6MjEwMTQzMDIwMH0.OWf2H69YZVe-FJPW214YfpUOUdakWDcFadrmDSXzrEg';
-            // =======================================================================================
+            // =======================================================================
 
             const loadingScreen = document.getElementById('loadingScreen');
             const mainCard = document.getElementById('mainCard');
@@ -1047,7 +1047,10 @@
                         .select('*')
                         .order('id', { ascending: true });
 
-                    if (error) throw error;
+                    if (error) {
+                        console.error('Supabase error:', error);
+                        throw error;
+                    }
                     return data || [];
                 } catch (error) {
                     console.error('Error fetching cloud data:', error);
@@ -1070,7 +1073,10 @@
                         .delete()
                         .neq('id', 0);
 
-                    if (deleteError) throw deleteError;
+                    if (deleteError) {
+                        console.error('Delete error:', deleteError);
+                        throw deleteError;
+                    }
 
                     // Insert new data if there are entries
                     if (entries.length > 0) {
@@ -1078,7 +1084,10 @@
                             .from('voucher_claims')
                             .insert(entries);
 
-                        if (insertError) throw insertError;
+                        if (insertError) {
+                            console.error('Insert error:', insertError);
+                            throw insertError;
+                        }
                     }
 
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
